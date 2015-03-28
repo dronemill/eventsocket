@@ -1,8 +1,11 @@
 package eventsocket
 
 import (
+	"fmt"
+	"net"
 	"net/http"
 
+	"github.com/LiftMe/glip/log"
 	"github.com/gorilla/mux"
 )
 
@@ -37,9 +40,15 @@ func (h *httpServer) route() error {
 func (h *httpServer) listen(listenAddr string) error {
 	http.Handle("/", h.router)
 
-	err := http.ListenAndServe(listenAddr, nil)
+	l, err := net.Listen("tcp", listenAddr)
 	if err != nil {
-		// log.Error(fmt.Sprintf("%s: %s", "ListenAndServe Error", err.Error()))
+		log.Error(fmt.Sprintf("%s: %s", "Listen Error", err.Error()))
+		return err
+	}
+
+	err = http.Serve(l, nil)
+	if err != nil {
+		log.Error(fmt.Sprintf("%s: %s", "Serve Error", err.Error()))
 		return err
 	}
 
