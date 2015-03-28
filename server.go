@@ -32,5 +32,8 @@ func registerServer(server *Server) {
 	server.HttpServer = &httpServer{}
 
 	server.HttpServer.route()
-	server.HttpServer.listen(server.Config.listenAddr)
+}
+
+func (server *Server) Start() error {
+	return server.HttpServer.listen(server.Config.listenAddr)
 }
