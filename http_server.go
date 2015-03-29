@@ -14,14 +14,14 @@ type httpServer struct {
 }
 
 // install the http server's router
-func (h *httpServer) route() (*mux.Router, error) {
+func (h *httpServer) route() error {
 	// log.Info("Initializing EventSocket Router")
 
 	// instantiate a new controller
 	C, err := newHttpController()
 	if err != nil {
 		// log.Error(fmt.Sprintf("Encountered error while instantiating new HttpController: %s", err.Error()))
-		return nil, err
+		return err
 	}
 
 	// get a new router
@@ -34,7 +34,7 @@ func (h *httpServer) route() (*mux.Router, error) {
 	s.HandleFunc("/clients", C.Client.Create).Methods("POST")
 	s.HandleFunc("/dev/ping", C.Dev.Ping).Methods("GET")
 
-	return h.router, nil
+	return nil
 }
 
 // handle and serve the api
