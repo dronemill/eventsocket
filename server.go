@@ -35,5 +35,13 @@ func registerServer(server *Server) {
 }
 
 func (server *Server) Start() error {
-	return server.HttpServer.listen(server.Config.listenAddr)
+	if err := server.HttpServer.listen(server.Config.listenAddr); err != nil {
+		return err
+	}
+
+	return server.HttpServer.serve()
+}
+
+func (server *Server) Stop() error {
+	return (*server.HttpServer.listener).Close()
 }

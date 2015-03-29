@@ -20,4 +20,6 @@ func (C *controllerClient) Create(w http.ResponseWriter, r *http.Request) {
 	client := newClient()
 
 	json.NewEncoder(w).Encode(client)
+
+	return
 }

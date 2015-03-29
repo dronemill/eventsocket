@@ -10,7 +10,8 @@ import (
 )
 
 type httpServer struct {
-	router *mux.Router
+	router   *mux.Router
+	listener *net.Listener
 }
 
 // install the http server's router
@@ -37,19 +38,24 @@ func (h *httpServer) route() error {
 	return nil
 }
 
-// handle and serve the api
+// listen
 func (h *httpServer) listen(listenAddr string) error {
-	http.Handle("/", h.router)
-
 	l, err := net.Listen("tcp", listenAddr)
 	if err != nil {
 		log.Error(fmt.Sprintf("%s: %s", "Listen Error", err.Error()))
 		return err
 	}
 
-	err = http.Serve(l, nil)
+	h.listener = &l
+	return nil
+}
+
+// server
+func (h *httpServer) serve() error {
+	http.Handle("/", h.router)
+
+	err := http.Serve(*h.listener, nil)
 	if err != nil {
-		log.Error(fmt.Sprintf("%s: %s", "Serve Error", err.Error()))
 		return err
 	}
 
