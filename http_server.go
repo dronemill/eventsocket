@@ -32,6 +32,7 @@ func (h *httpServer) route() (*mux.Router, error) {
 	// s.HandleFunc("/clients/{cid}/ws", C.Client.GetWs).Methods("GET")
 	// s.HandleFunc("/clients/{cid}", C.Client.Get).Methods("GET")
 	s.HandleFunc("/clients", C.Client.Create).Methods("POST")
+	s.HandleFunc("/dev/ping", C.Dev.Ping).Methods("GET")
 
 	return h.router, nil
 }
