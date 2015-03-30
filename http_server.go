@@ -30,7 +30,7 @@ func (h *httpServer) route() error {
 	s := h.router.PathPrefix("/v1").Subrouter()
 
 	// handle routes
-	// s.HandleFunc("/clients/{cid}/ws", C.Client.GetWs).Methods("GET")
+	s.HandleFunc("/clients/{id}/ws", C.Client.ServeWs).Methods("GET")
 	// s.HandleFunc("/clients/{cid}", C.Client.Get).Methods("GET")
 	s.HandleFunc("/clients", C.Client.Create).Methods("POST")
 	s.HandleFunc("/dev/ping", C.Dev.Ping).Methods("GET")
