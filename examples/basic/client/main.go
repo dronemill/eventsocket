@@ -1,7 +1,10 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -13,6 +16,7 @@ import (
 )
 
 var d websocket.Dialer
+var writer = flag.Bool("writer", false, "Do we write to the websocket connection")
 
 func init() {
 	d = websocket.Dialer{
@@ -25,6 +29,8 @@ func init() {
 }
 
 func main() {
+	flag.Parse()
+
 	resp, err := http.Post("http://127.0.0.1:8080/v1/clients", "application/json", strings.NewReader(""))
 	if err != nil {
 		panic(err)
@@ -47,5 +53,42 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("Connected!  %v  <====>  %v", c.RemoteAddr(), c.LocalAddr())
+	fmt.Printf("Connected!  %v  <====>  %v\n\n", c.RemoteAddr(), c.LocalAddr())
+
+	if *writer {
+		go becomeWriter(c)
+	}
+
+	for {
+		messageType, p, err := c.ReadMessage()
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Printf("%v :: %s\n", messageType, string(p))
+	}
+}
+
+func becomeWriter(c *websocket.Conn) {
+	tickChan := time.NewTicker(time.Second * 1).C
+
+	for {
+		select {
+		case <-tickChan:
+			if err := c.WriteMessage(websocket.TextMessage, []byte(randomString(32))); err != nil {
+				panic(err)
+			}
+		}
+	}
+}
+
+func randomString(size int) string {
+	rb := make([]byte, size)
+	_, err := rand.Read(rb)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return base64.URLEncoding.EncodeToString(rb)
 }
