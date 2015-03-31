@@ -4,13 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-
-	"github.com/gorilla/websocket"
 )
 
 type Client struct {
-	Id string          `json:"Id"`
-	ws *websocket.Conn `json:-`
+	Id string        `json:"Id"`
+	ws *wsConnection `json:-`
 }
 
 type Clients map[string]*Client
@@ -40,8 +38,19 @@ func clientById(id string) (*Client, error) {
 
 // upgrade the http connection to become a ws connection
 func (client *Client) connectionUpgrade(w http.ResponseWriter, r *http.Request) error {
+	// sanity check
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", 405)
+		return errors.New("Methods not allowed")
+	}
+
 	// upgrade the connection
-	ws, err := upgrader.Upgrade(w, r, nil)
+	wsConn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return err
+	}
+
+	ws, err := newWsConnection(wsConn)
 	if err != nil {
 		return err
 	}

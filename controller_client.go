@@ -36,6 +36,8 @@ func (C *controllerClient) ServeWs(w http.ResponseWriter, r *http.Request) {
 
 	client.connectionUpgrade(w, r)
 
+	client.ws.pump()
+
 	// json.NewEncoder(w).Encode(client)
 
 	return

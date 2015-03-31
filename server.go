@@ -35,6 +35,8 @@ func registerServer(server *Server) {
 }
 
 func (server *Server) Start() error {
+	go h.run()
+
 	if err := server.HttpServer.listen(server.Config.listenAddr); err != nil {
 		return err
 	}
