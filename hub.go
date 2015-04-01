@@ -1,7 +1,5 @@
 package eventsocket
 
-import "fmt"
-
 // hub maintains the set of active connections, and broadcasts messages
 // for given events to where they need to go
 type hub struct {
@@ -36,7 +34,6 @@ func (h *hub) run() {
 				close(c.send)
 			}
 		case m := <-h.broadcast:
-			fmt.Println("Broadcasting")
 			for c := range h.connections {
 				select {
 				case c.send <- m:
