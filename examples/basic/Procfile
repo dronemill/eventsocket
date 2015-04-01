@@ -1,0 +1,3 @@
+# Use goreman to run `go get github.com/mattn/goreman`
+server: cd `go list -f '{{.Dir}}' github.com/dronemill/eventsocket/examples/basic/server` && go run *.go
+webclient: cd `go list -f '{{.Dir}}' github.com/dronemill/eventsocket/examples/basic/webclient` && go run *.go
