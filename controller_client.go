@@ -19,6 +19,9 @@ func (C *controllerClient) Create(w http.ResponseWriter, r *http.Request) {
 	// create the client
 	client := newClient()
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "application/json")
+
 	json.NewEncoder(w).Encode(client)
 
 	return
@@ -34,7 +37,13 @@ func (C *controllerClient) ServeWs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client.connectionUpgrade(w, r)
+	err = client.connectionUpgrade(w, r)
+	if err != nil {
+		return
+	}
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "application/json")
 
 	client.ws.pump()
 
