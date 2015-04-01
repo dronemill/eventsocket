@@ -2,10 +2,10 @@ package eventsocket
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 
-	"github.com/LiftMe/glip/log"
 	"github.com/gorilla/mux"
 )
 
