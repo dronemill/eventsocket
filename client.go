@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/gorilla/websocket"
 )
 
 type Client struct {
@@ -26,6 +28,18 @@ func newClient() (client *Client) {
 	clients[client.Id] = client
 
 	return
+}
+
+// Connection upgrader
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	// FIXME: this is bad
+	CheckOrigin: checkOrigin,
+}
+
+func checkOrigin(r *http.Request) bool {
+	return true
 }
 
 // fetch a client by it's id

@@ -20,11 +20,6 @@ const (
 	maxMessageSize = 512
 )
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
-
 type wsConnection struct {
 	// The websocket connection.
 	ws *websocket.Conn
@@ -62,6 +57,7 @@ func (c *wsConnection) readPump() {
 		h.unregister <- c
 		c.ws.Close()
 	}()
+
 	c.ws.SetReadLimit(maxMessageSize)
 	c.ws.SetReadDeadline(time.Now().Add(pongWait))
 	c.ws.SetPongHandler(func(string) error { c.ws.SetReadDeadline(time.Now().Add(pongWait)); return nil })
