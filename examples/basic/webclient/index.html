@@ -18,6 +18,7 @@
 				// do some preselects
 				var $inputBox = $("#btn-input");
 				var $chatContainer = $("#chat-container");
+				var $sendBtn = $("#btn-chat");
 
 				var conn;
 				var url = "//{{$}}";
@@ -39,8 +40,20 @@
 					$chatContainer.append(html);
 				}
 
+				function goDisabled()
+				{
+					$inputBox.prop("disabled", true).attr("placeholder", "Connection lost");
+					$sendBtn.prop("disabled", true);
+				}
+
+				function goEnabled()
+				{
+					$inputBox.prop("disabled", false).attr("placeholder", "Type your message here...");
+					$sendBtn.prop("disabled", false);
+				}
+
 				// handle message sends
-				$("#btn-chat").click(function(e)
+				$sendBtn.click(function(e)
 				{
 					// ensure we have a connection
 					if (!conn) {
@@ -85,7 +98,7 @@
 							conn = new WebSocket("ws:" + url + "/v1/clients/" + data.Id + "/ws");
 							conn.onclose = function(evt)
 							{
-								alert("Connection closed.");
+								goDisabled();
 							};
 							conn.onmessage = function(evt)
 							{
