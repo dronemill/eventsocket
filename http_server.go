@@ -1,8 +1,6 @@
 package eventsocket
 
 import (
-	"fmt"
-	"log"
 	"net"
 	"net/http"
 
@@ -42,7 +40,7 @@ func (h *httpServer) route() error {
 func (h *httpServer) listen(listenAddr string) error {
 	l, err := net.Listen("tcp", listenAddr)
 	if err != nil {
-		log.Error(fmt.Sprintf("%s: %s", "Listen Error", err.Error()))
+		// log.Error(fmt.Sprintf("%s: %s", "Listen Error", err.Error()))
 		return err
 	}
 
