@@ -1,2 +1,2 @@
 # eventsocket
-Event broker in Go 
+Websocket event broker in Go
