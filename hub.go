@@ -1,5 +1,7 @@
 package eventsocket
 
+import "fmt"
+
 // hub maintains the set of active connections, and broadcasts messages
 // for given events to where they need to go
 type hub struct {
@@ -7,7 +9,10 @@ type hub struct {
 	connections map[*wsConnection]bool
 
 	// Inbound messages from the connections.
-	broadcast chan []byte
+	recv chan Message
+
+	// Handle message subscriptions
+	subscribe chan *hubSubscription
 
 	// Register requests from the connections.
 	register chan *wsConnection
@@ -16,8 +21,13 @@ type hub struct {
 	unregister chan *wsConnection
 }
 
+type hubSubscription struct {
+	event  string
+	result chan error
+}
+
 var h = hub{
-	broadcast:   make(chan []byte),
+	recv:        make(chan Message),
 	register:    make(chan *wsConnection),
 	unregister:  make(chan *wsConnection),
 	connections: make(map[*wsConnection]bool),
@@ -33,7 +43,9 @@ func (h *hub) run() {
 				delete(h.connections, c)
 				close(c.send)
 			}
-		case m := <-h.broadcast:
+		case e := <-h.subscribe:
+			fmt.Printf("Not handled:: %s\n\n", e.event)
+		case m := <-h.recv:
 			for c := range h.connections {
 				select {
 				case c.send <- m:

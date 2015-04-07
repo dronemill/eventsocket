@@ -75,7 +75,13 @@ func becomeWriter(c *websocket.Conn) {
 	for {
 		select {
 		case <-tickChan:
-			if err := c.WriteMessage(websocket.TextMessage, []byte(randomString(32))); err != nil {
+			p := make(map[string]interface{})
+			p["value"] = randomString(32)
+			m := eventsocket.Message{
+				MessageType: eventsocket.MESSAGE_TYPE_BROADCAST,
+				Payload:     p,
+			}
+			if err := c.WriteJSON(m); err != nil {
 				panic(err)
 			}
 		}

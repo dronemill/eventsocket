@@ -25,11 +25,18 @@ type wsConnection struct {
 	ws *websocket.Conn
 
 	// Buffered channel of outbound messages.
-	send chan []byte
+	send chan Message
+
+	// Receive messages from this client
+	recv chan Message
 }
 
 func newWsConnection(ws *websocket.Conn) (*wsConnection, error) {
-	c := &wsConnection{send: make(chan []byte, 256), ws: ws}
+	c := &wsConnection{
+		send: make(chan Message, 256),
+		recv: make(chan Message, 256),
+		ws:   ws,
+	}
 
 	// fmt.Printf("%+v\n", c)
 	h.register <- c
@@ -53,11 +60,12 @@ func (c *wsConnection) readPump() {
 	c.ws.SetReadDeadline(time.Now().Add(pongWait))
 	c.ws.SetPongHandler(func(string) error { c.ws.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
-		_, message, err := c.ws.ReadMessage()
-		if err != nil {
+		m := &Message{}
+		if c.ws.ReadJSON(m) != nil {
 			break
 		}
-		h.broadcast <- message
+
+		c.recv <- *m
 	}
 }
 
@@ -65,6 +73,12 @@ func (c *wsConnection) readPump() {
 func (c *wsConnection) write(mt int, payload []byte) error {
 	c.ws.SetWriteDeadline(time.Now().Add(writeWait))
 	return c.ws.WriteMessage(mt, payload)
+}
+
+// writeJSON writes a json message
+func (c *wsConnection) writeJSON(message interface{}) error {
+	c.ws.SetWriteDeadline(time.Now().Add(writeWait))
+	return c.ws.WriteJSON(message)
 }
 
 // writePump pumps messages from the hub to the websocket connection.
@@ -81,7 +95,7 @@ func (c *wsConnection) writePump() {
 				c.write(websocket.CloseMessage, []byte{})
 				return
 			}
-			if err := c.write(websocket.TextMessage, message); err != nil {
+			if err := c.writeJSON(message); err != nil {
 				return
 			}
 		case <-ticker.C:

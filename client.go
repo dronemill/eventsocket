@@ -73,3 +73,23 @@ func (client *Client) connectionUpgrade(w http.ResponseWriter, r *http.Request) 
 	client.ws = ws
 	return nil
 }
+
+func (client *Client) recv() {
+	for {
+		message := <-client.ws.recv
+
+		fmt.Printf("AHHHHHHHHHHHHHHHHHH %+v\n", message)
+	}
+
+}
+
+func (client *Client) run() error {
+
+	// start the client message handler
+	go client.recv()
+
+	// socket read write control
+	client.ws.pump()
+
+	return nil
+}

@@ -45,7 +45,8 @@ func (C *controllerClient) ServeWs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 
-	client.ws.pump()
+	// start the client's message handler service
+	client.run()
 
 	// json.NewEncoder(w).Encode(client)
 
