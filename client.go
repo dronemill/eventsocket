@@ -74,11 +74,16 @@ func (client *Client) connectionUpgrade(w http.ResponseWriter, r *http.Request) 
 	return nil
 }
 
+// receive message on behalf of the client
 func (client *Client) recv() {
 	for {
+		// get a message from the channel
 		message := <-client.ws.recv
 
-		fmt.Printf("AHHHHHHHHHHHHHHHHHH %+v\n", message)
+		h.recvClientMessage <- ClientMessage{
+			ClientId: client.Id,
+			Message:  message,
+		}
 	}
 
 }
