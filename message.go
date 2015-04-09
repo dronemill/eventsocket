@@ -1,5 +1,10 @@
 package eventsocket
 
+type ClientMessage struct {
+	ClientId string
+	Message  Message
+}
+
 type Message struct {
 	MessageType MessageType            `json:messageType`
 	Payload     map[string]interface{} `json:payload`
