@@ -9,8 +9,9 @@ import (
 )
 
 type Client struct {
-	Id string        `json:"Id"`
-	ws *wsConnection `json:-`
+	Id            string          `json:"Id"`
+	ws            *wsConnection   `json:-`
+	subscriptions map[string]bool `json:-`
 }
 
 type Clients map[string]*Client
@@ -24,6 +25,7 @@ func newClient() (client *Client) {
 
 	id := <-uuidBuilder
 	client.Id = id.String()
+	client.subscriptions = make(map[string]bool)
 
 	clients[client.Id] = client
 
@@ -71,6 +73,9 @@ func (client *Client) connectionUpgrade(w http.ResponseWriter, r *http.Request) 
 
 	// store the connection reference
 	client.ws = ws
+
+	h.register <- client
+
 	return nil
 }
 
@@ -79,6 +84,11 @@ func (client *Client) recv() {
 	for {
 		// get a message from the channel
 		message := <-client.ws.recv
+
+		// if the ws was closed, then get our
+		if client.ws.closed {
+			return
+		}
 
 		h.recvClientMessage <- &ClientMessage{
 			ClientId: client.Id,

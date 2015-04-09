@@ -1,7 +1,6 @@
 package eventsocket
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -30,79 +29,92 @@ type wsConnection struct {
 
 	// Receive messages from this client
 	recv chan Message
+
+	// has this wsConnection been closed
+	closed bool
 }
 
 func newWsConnection(ws *websocket.Conn) (*wsConnection, error) {
-	c := &wsConnection{
-		send: make(chan Message, 256),
-		recv: make(chan Message, 256),
-		ws:   ws,
+	wsc := &wsConnection{
+		send:   make(chan Message, 256),
+		recv:   make(chan Message, 256),
+		ws:     ws,
+		closed: false,
 	}
 
-	// fmt.Printf("%+v\n", c)
-
-	return c, nil
+	return wsc, nil
 }
 
-func (c *wsConnection) pump() {
-	go c.writePump()
-	c.readPump()
+func (wsc *wsConnection) pump() {
+	go wsc.writePump()
+	wsc.readPump()
 }
 
 // readPump pumps messages from the websocket connection to the hub.
-func (c *wsConnection) readPump() {
+func (wsc *wsConnection) readPump() {
 	defer func() {
-		// h.unregister <- c
-		fmt.Println("Need to unregister this connection")
-		c.ws.Close()
+		h.unregister <- wsc
 	}()
 
-	c.ws.SetReadLimit(maxMessageSize)
-	c.ws.SetReadDeadline(time.Now().Add(pongWait))
-	c.ws.SetPongHandler(func(string) error { c.ws.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	wsc.ws.SetReadLimit(maxMessageSize)
+	wsc.ws.SetReadDeadline(time.Now().Add(pongWait))
+	wsc.ws.SetPongHandler(func(string) error { wsc.ws.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
 		m := &Message{}
-		if c.ws.ReadJSON(m) != nil {
+		if wsc.ws.ReadJSON(m) != nil {
 			break
 		}
 
-		c.recv <- *m
+		wsc.recv <- *m
 	}
 }
 
 // write writes a message with the given message type and payload.
-func (c *wsConnection) write(mt int, payload []byte) error {
-	c.ws.SetWriteDeadline(time.Now().Add(writeWait))
-	return c.ws.WriteMessage(mt, payload)
+func (wsc *wsConnection) write(mt int, payload []byte) error {
+	wsc.ws.SetWriteDeadline(time.Now().Add(writeWait))
+	return wsc.ws.WriteMessage(mt, payload)
 }
 
 // writeJSON writes a json message
-func (c *wsConnection) writeJSON(message interface{}) error {
-	c.ws.SetWriteDeadline(time.Now().Add(writeWait))
-	return c.ws.WriteJSON(message)
+func (wsc *wsConnection) writeJSON(message interface{}) error {
+	wsc.ws.SetWriteDeadline(time.Now().Add(writeWait))
+	return wsc.ws.WriteJSON(message)
 }
 
 // writePump pumps messages from the hub to the websocket connection.
-func (c *wsConnection) writePump() {
+func (wsc *wsConnection) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		c.ws.Close()
+		h.unregister <- wsc
 	}()
 	for {
 		select {
-		case message, ok := <-c.send:
+		case message, ok := <-wsc.send:
 			if !ok {
-				c.write(websocket.CloseMessage, []byte{})
+				wsc.write(websocket.CloseMessage, []byte{})
 				return
 			}
-			if err := c.writeJSON(message); err != nil {
+			if err := wsc.writeJSON(message); err != nil {
 				return
 			}
 		case <-ticker.C:
-			if err := c.write(websocket.PingMessage, []byte{}); err != nil {
+			if err := wsc.write(websocket.PingMessage, []byte{}); err != nil {
 				return
 			}
 		}
 	}
+}
+
+func (wsc *wsConnection) Close() {
+	// if we have already closed the channels, then get out
+	if wsc.closed {
+		return
+	}
+	wsc.closed = true
+
+	// blose stuff
+	close(wsc.send)
+	close(wsc.recv)
+	wsc.ws.Close()
 }
