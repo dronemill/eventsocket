@@ -7,7 +7,7 @@ type hub struct {
 	connections map[*wsConnection]bool
 
 	// Inbound messages from the connections.
-	recvClientMessage chan ClientMessage
+	recvClientMessage chan *ClientMessage
 
 	// Handle message subscriptions
 	subscribe chan *hubSubscription
@@ -28,7 +28,7 @@ type hubSubscription struct {
 }
 
 var h = hub{
-	recvClientMessage: make(chan ClientMessage),
+	recvClientMessage: make(chan *ClientMessage),
 	register:          make(chan *wsConnection),
 	unregister:        make(chan *wsConnection),
 	subscribe:         make(chan *hubSubscription),
@@ -58,3 +58,5 @@ func (h *hub) run() {
 		}
 	}
 }
+
+// func (h *hub) ingest(cm *ClientMessage)

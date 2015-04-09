@@ -80,7 +80,7 @@ func (client *Client) recv() {
 		// get a message from the channel
 		message := <-client.ws.recv
 
-		h.recvClientMessage <- ClientMessage{
+		h.recvClientMessage <- &ClientMessage{
 			ClientId: client.Id,
 			Message:  message,
 		}
