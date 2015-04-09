@@ -1,5 +1,7 @@
 package eventsocket
 
+import "fmt"
+
 // hub maintains the set of active connections, and broadcasts messages
 // for given events to where they need to go
 type hub struct {
@@ -47,16 +49,29 @@ func (h *hub) run() {
 				close(c.send)
 			}
 		case m := <-h.recvClientMessage:
-			for c := range h.connections {
-				select {
-				case c.send <- m.Message:
-				default:
-					close(c.send)
-					delete(h.connections, c)
-				}
-			}
+			h.ingest(m)
 		}
 	}
 }
 
-// func (h *hub) ingest(cm *ClientMessage)
+func (h *hub) ingest(cm *ClientMessage) {
+	switch cm.Message.MessageType {
+	case MESSAGE_TYPE_BROADCAST:
+		h.handleBroadcast(cm)
+	default:
+		fmt.Printf("ERROR: unhandled MessageType:%v [ClientId:%s]\n", cm.Message.MessageType, cm.ClientId)
+	}
+}
+
+func (h *hub) handleBroadcast(cm *ClientMessage) error {
+	for c := range h.connections {
+		select {
+		case c.send <- cm.Message:
+		default:
+			close(c.send)
+			delete(h.connections, c)
+		}
+	}
+
+	return nil
+}

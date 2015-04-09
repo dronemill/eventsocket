@@ -65,7 +65,7 @@ func main() {
 			panic(err)
 		}
 
-		fmt.Printf("%v :: %s\n", messageType, string(p))
+		fmt.Printf("%v :: %s", messageType, string(p))
 	}
 }
 
