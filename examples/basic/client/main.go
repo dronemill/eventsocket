@@ -59,6 +59,8 @@ func main() {
 		go becomeWriter(c)
 	}
 
+	subscribe(c)
+
 	for {
 		messageType, p, err := c.ReadMessage()
 		if err != nil {
@@ -69,8 +71,20 @@ func main() {
 	}
 }
 
+func subscribe(c *websocket.Conn) {
+	p := make(map[string]interface{})
+	p["Events"] = []string{"foo"}
+	m := eventsocket.Message{
+		MessageType: eventsocket.MESSAGE_TYPE_SUSCRIBE,
+		Payload:     p,
+	}
+	if err := c.WriteJSON(m); err != nil {
+		panic(err)
+	}
+}
+
 func becomeWriter(c *websocket.Conn) {
-	tickChan := time.NewTicker(time.Second * 1).C
+	tickChan := time.NewTicker(time.Second).C
 
 	for {
 		select {
@@ -78,7 +92,8 @@ func becomeWriter(c *websocket.Conn) {
 			p := make(map[string]interface{})
 			p["value"] = randomString(32)
 			m := eventsocket.Message{
-				MessageType: eventsocket.MESSAGE_TYPE_BROADCAST,
+				MessageType: eventsocket.MESSAGE_TYPE_STANDARD,
+				Event:       "foo",
 				Payload:     p,
 			}
 			if err := c.WriteJSON(m); err != nil {

@@ -1,6 +1,7 @@
 package eventsocket
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -39,7 +40,6 @@ func newWsConnection(ws *websocket.Conn) (*wsConnection, error) {
 	}
 
 	// fmt.Printf("%+v\n", c)
-	h.register <- c
 
 	return c, nil
 }
@@ -52,7 +52,8 @@ func (c *wsConnection) pump() {
 // readPump pumps messages from the websocket connection to the hub.
 func (c *wsConnection) readPump() {
 	defer func() {
-		h.unregister <- c
+		// h.unregister <- c
+		fmt.Println("Need to unregister this connection")
 		c.ws.Close()
 	}()
 
