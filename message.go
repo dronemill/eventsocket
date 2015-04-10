@@ -6,9 +6,13 @@ type ClientMessage struct {
 }
 
 type Message struct {
-	MessageType MessageType            `json:MessageType`
-	Event       string                 `json:Event,omitempty`
-	Payload     map[string]interface{} `json:Payload`
+	MessageType MessageType `json:MessageType`
+	Event       string      `json:Event,omitempty`
+	RequestId   string      `json:RequestId,omitempty`
+	// ReplyTo         string                 `json:ReplyTo,omitempty`
+	ReplyClientId   string                 `json:ReplyClientId,omitempty`
+	RequestClientId string                 `json:RequestClientId,omitempty`
+	Payload         map[string]interface{} `json:Payload`
 }
 
 type MessageType int

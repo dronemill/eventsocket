@@ -104,6 +104,10 @@ func (h *hub) ingest(cm *ClientMessage) {
 		h.handleSuscribe(cm)
 	case MESSAGE_TYPE_UNSUSCRIBE:
 		h.handleUnsuscribe(cm)
+	case MESSAGE_TYPE_REQUEST:
+		h.handleRequest(cm)
+	case MESSAGE_TYPE_REPLY:
+		h.handleReply(cm)
 	default:
 		fmt.Printf("ERROR: unhandled MessageType:%v [ClientId:%s]\n", cm.Message.MessageType, cm.ClientId)
 		os.Exit(1)
@@ -178,7 +182,24 @@ func (h *hub) handleUnsuscribe(cm *ClientMessage) {
 	return
 }
 
-// store the subscription
+// handle a request message. this is done by storing the requestee's
+// ClientId as the ReplyTo, and then forwarding the message along
+// to the receiving client
+func (h *hub) handleRequest(cm *ClientMessage) {
+	fmt.Println("HANDLING REQUEST")
+
+	cm.Message.ReplyClientId = cm.ClientId
+	clients[cm.Message.RequestClientId].ws.send <- cm.Message
+}
+
+// handle a reply. forward the message along to the requestee
+func (h *hub) handleReply(cm *ClientMessage) {
+	fmt.Println("HANDLING REPLY")
+
+	clients[cm.Message.ReplyClientId].ws.send <- cm.Message
+}
+
+// store the subscription for the given clientId and event
 func (h *hub) storeSubscription(id, e string) {
 	// make sure we have a subscription key
 	if _, ok := h.subscriptions[e]; !ok {
