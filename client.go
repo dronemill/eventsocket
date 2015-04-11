@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gorilla/websocket"
+	"github.com/dronemill/eventsocket/Godeps/_workspace/src/github.com/gorilla/websocket"
 )
 
 type Client struct {

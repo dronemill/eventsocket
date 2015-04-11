@@ -3,7 +3,7 @@ package eventsocket
 import (
 	"time"
 
-	"github.com/gorilla/websocket"
+	"github.com/dronemill/eventsocket/Godeps/_workspace/src/github.com/gorilla/websocket"
 )
 
 const (

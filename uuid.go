@@ -3,7 +3,7 @@ package eventsocket
 import (
 	"fmt"
 
-	"github.com/nu7hatch/gouuid"
+	"github.com/dronemill/eventsocket/Godeps/_workspace/src/github.com/nu7hatch/gouuid"
 )
 
 var uuidBuilder = make(chan uuid.UUID)

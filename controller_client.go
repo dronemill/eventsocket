@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/dronemill/eventsocket/Godeps/_workspace/src/github.com/gorilla/mux"
 )
 
 type controllerClient struct {

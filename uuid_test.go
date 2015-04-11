@@ -3,7 +3,7 @@ package eventsocket
 import (
 	"testing"
 
-	"github.com/nu7hatch/gouuid"
+	"github.com/dronemill/eventsocket/Godeps/_workspace/src/github.com/nu7hatch/gouuid"
 )
 
 func Test_Uuid_GetUuid(t *testing.T) {
