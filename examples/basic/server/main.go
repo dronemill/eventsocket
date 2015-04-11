@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 
 	"github.com/dronemill/eventsocket"
@@ -17,5 +18,6 @@ func main() {
 		log.Fatal(err)
 	}
 
+	fmt.Printf("Starting server bound to: %s...\n", *addr)
 	es.Start()
 }
