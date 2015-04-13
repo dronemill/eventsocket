@@ -11,7 +11,7 @@ const (
 	writeWait = 10 * time.Second
 
 	// time allowed to read the next pong message from the peer.
-	pongWait = 60 * time.Second
+	pongWait = 15 * time.Second
 
 	// send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
