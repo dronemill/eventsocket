@@ -38,7 +38,10 @@ func main() {
 
 	go client.Recv()
 
-	client.Suscribe("foo")
+	subChan, err := client.Suscribe("foo")
+	if err != nil {
+		panic(err)
+	}
 
 	for {
 		select {
@@ -47,11 +50,11 @@ func main() {
 				panic(m.Err)
 			}
 			fmt.Printf("BROADCAST err:%v :: %+v\n", m.Err, m.Message.Payload)
-		case m := <-client.RecvStandard:
+		case m := <-subChan:
 			if m.Err != nil {
 				panic(m.Err)
 			}
-			fmt.Printf("STANDARD err:%v :: %+v\n", m.Err, m.Message.Payload)
+			fmt.Printf("Foo: err:%v :: %+v\n", m.Err, m.Message.Payload)
 		case m := <-client.RecvRequest:
 			if m.Err != nil {
 				panic(m.Err)
