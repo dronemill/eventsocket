@@ -18,6 +18,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	es.SetDefaultMaxMessageSize(10240)
+
 	fmt.Printf("Starting server bound to: %s...\n", *addr)
 	es.Start()
 }
