@@ -47,3 +47,8 @@ func (server *Server) Start() error {
 func (server *Server) Stop() error {
 	return (*server.HttpServer.listener).Close()
 }
+
+// maximum message size allowed from peer
+func (server *Server) SetDefaultMaxMessageSize(limit int64) {
+	defaultMaxMessageSize = limit
+}

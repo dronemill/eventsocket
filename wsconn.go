@@ -15,10 +15,10 @@ const (
 
 	// send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
-
-	// maximum message size allowed from peer.
-	maxMessageSize = 512
 )
+
+// maximum message size allowed from peer
+var defaultMaxMessageSize = int64(512)
 
 type wsConnection struct {
 	// The websocket connection.
@@ -32,17 +32,26 @@ type wsConnection struct {
 
 	// has this wsConnection been closed
 	closed bool
+
+	// the maximum message size allowed
+	maxMessageSize int64
 }
 
 func newWsConnection(ws *websocket.Conn) (*wsConnection, error) {
 	wsc := &wsConnection{
-		send:   make(chan Message, 256),
-		recv:   make(chan Message, 256),
-		ws:     ws,
-		closed: false,
+		send:           make(chan Message, 256),
+		recv:           make(chan Message, 256),
+		ws:             ws,
+		closed:         false,
+		maxMessageSize: defaultMaxMessageSize,
 	}
 
 	return wsc, nil
+}
+
+// override the default readlimit of 512
+func (wsc *wsConnection) SetMaxMessageSize(limit int64) {
+	wsc.maxMessageSize = limit
 }
 
 func (wsc *wsConnection) pump() {
@@ -56,7 +65,7 @@ func (wsc *wsConnection) readPump() {
 		h.unregister <- wsc
 	}()
 
-	wsc.ws.SetReadLimit(maxMessageSize)
+	wsc.ws.SetReadLimit(wsc.maxMessageSize)
 	wsc.ws.SetReadDeadline(time.Now().Add(pongWait))
 	wsc.ws.SetPongHandler(func(string) error { wsc.ws.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
