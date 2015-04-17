@@ -26,6 +26,9 @@ func main() {
 		panic(err)
 	}
 
+	// set the max mesage that can be received
+	client.SetMaxMessageSize(10240)
+
 	fmt.Printf("Connected! ClientId: %s\n", client.Id)
 
 	if *ticker {
@@ -99,7 +102,7 @@ func tick(client *eventsocketclient.Client) {
 			}
 
 			p = make(eventsocketclient.Payload)
-			p["value"] = randomString(32)
+			p["value"] = randomString(320)
 
 			if err := client.Broadcast(&p); err != nil {
 				panic(err)
