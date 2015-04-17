@@ -65,6 +65,8 @@ func main() {
 			if err := client.Reply(m.Message.RequestId, m.Message.ReplyClientId, &p); err != nil {
 				panic(err)
 			}
+		case err := <-client.RecvError:
+			panic(err)
 		}
 	}
 }
