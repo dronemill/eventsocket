@@ -186,16 +186,12 @@ func (h *hub) handleUnsuscribe(cm *ClientMessage) {
 // ClientId as the ReplyTo, and then forwarding the message along
 // to the receiving client
 func (h *hub) handleRequest(cm *ClientMessage) {
-	fmt.Println("HANDLING REQUEST")
-
 	cm.Message.ReplyClientId = cm.ClientId
 	clients[cm.Message.RequestClientId].ws.send <- cm.Message
 }
 
 // handle a reply. forward the message along to the requestee
 func (h *hub) handleReply(cm *ClientMessage) {
-	fmt.Println("HANDLING REPLY")
-
 	clients[cm.Message.ReplyClientId].ws.send <- cm.Message
 }
 
