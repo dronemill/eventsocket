@@ -136,8 +136,6 @@ func (h *hub) handleStandard(cm *ClientMessage) {
 		return
 	}
 
-	fmt.Printf("%+v\n", subscribers)
-
 	for s := range subscribers {
 		clients[s].ws.send <- cm.Message
 	}
@@ -187,6 +185,15 @@ func (h *hub) handleUnsuscribe(cm *ClientMessage) {
 // to the receiving client
 func (h *hub) handleRequest(cm *ClientMessage) {
 	cm.Message.ReplyClientId = cm.ClientId
+
+	if clients[cm.Message.RequestClientId] == nil {
+		h.requestError(cm,
+			"RequestClientID does not exist or is not connected",
+			ErrorRequestClientNoExist,
+		)
+		return
+	}
+
 	clients[cm.Message.RequestClientId].ws.send <- cm.Message
 }
 
@@ -231,4 +238,19 @@ func (h *hub) purgeSubscription(id, e string) {
 		delete(h.subscriptions, e)
 	}
 
+}
+
+func (h *hub) requestError(cm *ClientMessage, message, etype string) {
+	e := map[string]interface{}{
+		"Message": message,
+		"Type":    etype,
+	}
+
+	m := Message{
+		MessageType: MESSAGE_TYPE_REPLY,
+		RequestId:   cm.Message.RequestId,
+		Error:       e,
+	}
+
+	clients[cm.Message.ReplyClientId].ws.send <- m
 }

@@ -13,6 +13,7 @@ type Message struct {
 	ReplyClientId   string                 `json:ReplyClientId,omitempty`
 	RequestClientId string                 `json:RequestClientId,omitempty`
 	Payload         map[string]interface{} `json:Payload`
+	Error           map[string]interface{} `json:Error`
 }
 
 type MessageType int
