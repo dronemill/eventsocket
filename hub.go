@@ -44,7 +44,6 @@ var h = hub{
 }
 
 func (h *hub) run() {
-
 	go h.recvRegistrations()
 	go h.recvUnregistrations()
 
