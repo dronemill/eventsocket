@@ -3,7 +3,7 @@ package eventsocket
 import (
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/dronemill/eventsocket/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 	"github.com/dronemill/eventsocket/Godeps/_workspace/src/github.com/gorilla/websocket"
 )
 

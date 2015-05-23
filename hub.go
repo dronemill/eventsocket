@@ -3,7 +3,7 @@ package eventsocket
 import (
 	"fmt"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/dronemill/eventsocket/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 )
 
 // hub maintains the set of active connections, and broadcasts messages

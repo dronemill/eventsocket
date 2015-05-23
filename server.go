@@ -3,7 +3,7 @@ package eventsocket
 import (
 	"errors"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/dronemill/eventsocket/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 )
 
 type Server struct {
