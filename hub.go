@@ -44,15 +44,27 @@ var h = hub{
 }
 
 func (h *hub) run() {
+
+	go h.recvRegistrations()
+	go h.recvUnregistrations()
+
 	for {
 		select {
-		case cl := <-h.register:
-			h.registerClient(cl)
-		case c := <-h.unregister:
-			h.unregisterConnection(c)
 		case m := <-h.recvClientMessage:
 			h.ingest(m)
 		}
+	}
+}
+
+func (h *hub) recvRegistrations() {
+	for {
+		h.registerClient(<-h.register)
+	}
+}
+
+func (h *hub) recvUnregistrations() {
+	for {
+		h.unregisterConnection(<-h.unregister)
 	}
 }
 
@@ -72,7 +84,7 @@ func (h *hub) unregisterConnection(ws *wsConnection) {
 		ws.Close()
 	}()
 
-	// if we dont know about htis conneciton, then get out
+	// if we dont know about this conneciton, then get out
 	if _, ok := h.connections[ws]; !ok {
 		return
 	}
@@ -116,13 +128,8 @@ func (h *hub) ingest(cm *ClientMessage) {
 
 // broadcast a message to all active clients
 func (h *hub) handleBroadcast(cm *ClientMessage) {
-	for ws, _ := range h.connections {
-		select {
-		case ws.send <- cm.Message:
-		default:
-			h.unregister <- ws
-		}
-
+	for ws := range h.connections {
+		h.send(ws, &cm.Message)
 	}
 
 	return
@@ -137,7 +144,7 @@ func (h *hub) handleStandard(cm *ClientMessage) {
 	}
 
 	for s := range subscribers {
-		clients[s].ws.send <- cm.Message
+		h.send(clients[s].ws, &cm.Message)
 	}
 
 	return
@@ -188,18 +195,25 @@ func (h *hub) handleRequest(cm *ClientMessage) {
 
 	if clients[cm.Message.RequestClientId] == nil {
 		h.requestError(cm,
-			"RequestClientID does not exist or is not connected",
+			"RequestClientID does not exist",
 			ErrorRequestClientNoExist,
 		)
 		return
 	}
 
-	clients[cm.Message.RequestClientId].ws.send <- cm.Message
+	err := h.send(clients[cm.Message.RequestClientId].ws, &cm.Message)
+	if err != nil {
+		h.requestError(cm,
+			"RequestClientID is not connected",
+			ErrorRequestClientNotConnected,
+		)
+	}
 }
 
 // handle a reply. forward the message along to the requestee
 func (h *hub) handleReply(cm *ClientMessage) {
-	clients[cm.Message.ReplyClientId].ws.send <- cm.Message
+	// FIXME need to have some form of error handling here..
+	h.send(clients[cm.Message.ReplyClientId].ws, &cm.Message)
 }
 
 // store the subscription for the given clientId and event
@@ -240,6 +254,25 @@ func (h *hub) purgeSubscription(id, e string) {
 
 }
 
+func (h *hub) send(ws *wsConnection, m *Message) error {
+	var err error
+	err = nil
+	defer func() {
+		if r := recover(); r != nil {
+			h.unregister <- ws
+			err = fmt.Errorf("Send failed: %s", r)
+		}
+	}()
+
+	if ws.closed {
+		h.unregister <- ws
+		err = fmt.Errorf("WS is closed")
+	} else {
+		ws.send <- *m
+	}
+	return err
+}
+
 func (h *hub) requestError(cm *ClientMessage, message, etype string) {
 	e := map[string]interface{}{
 		"Message": message,
@@ -252,5 +285,8 @@ func (h *hub) requestError(cm *ClientMessage, message, etype string) {
 		Error:       e,
 	}
 
-	clients[cm.Message.ReplyClientId].ws.send <- m
+	// we dont need to check for errors here, because if the request fails,
+	// then it doesnt matter, as the client needing to know that it failed
+	// is the one who cant be sent to..
+	h.send(clients[cm.Message.ReplyClientId].ws, &m)
 }
