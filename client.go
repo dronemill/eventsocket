@@ -31,7 +31,7 @@ func newClient() (client *Client) {
 
 	clients[client.Id] = client
 
-	log.WithField("clientID", id).Info("Created new Client")
+	log.WithField("clientID", id.String()).Info("Created new Client")
 	return
 }
 
