@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/dronemill/eventsocket/Godeps/_workspace/src/github.com/gorilla/websocket"
 )
 
@@ -21,6 +22,7 @@ var clients = make(Clients)
 
 // instantiate a new client, set it's id, and store the client
 func newClient() (client *Client) {
+
 	client = new(Client)
 
 	id := <-uuidBuilder
@@ -29,6 +31,7 @@ func newClient() (client *Client) {
 
 	clients[client.Id] = client
 
+	log.WithField("clientID", id).Info("Created new Client")
 	return
 }
 

@@ -1,6 +1,10 @@
 package eventsocket
 
-import "errors"
+import (
+	"errors"
+
+	log "github.com/Sirupsen/logrus"
+)
 
 type Server struct {
 	Config struct {
@@ -11,11 +15,10 @@ type Server struct {
 
 // return a new, registered instance of the eventsocket server
 func NewServer(listenAddr string) (server *Server, err error) {
-
 	// ensure that we have a listenAddr
 	if listenAddr == "" {
 		err = errors.New("Empty listenAddr")
-		// log.Fatal(err.Error())
+		log.Error("Empty listenAddr")
 		return
 	}
 
@@ -29,12 +32,14 @@ func NewServer(listenAddr string) (server *Server, err error) {
 }
 
 func registerServer(server *Server) {
+	log.WithField("listenAddr", server.Config.listenAddr).Info("Registering new server")
 	server.HttpServer = &httpServer{}
 
 	server.HttpServer.route()
 }
 
 func (server *Server) Start() error {
+	log.WithField("listenAddr", server.Config.listenAddr).Info("Starting server")
 	go h.run()
 
 	if err := server.HttpServer.listen(server.Config.listenAddr); err != nil {
@@ -45,10 +50,14 @@ func (server *Server) Start() error {
 }
 
 func (server *Server) Stop() error {
+	log.WithField("listenAddr", server.Config.listenAddr).Info("Stopping server")
 	return (*server.HttpServer.listener).Close()
 }
 
 // maximum message size allowed from peer
 func (server *Server) SetDefaultMaxMessageSize(limit int64) {
+	log.WithField("listenAddr", server.Config.listenAddr).
+		WithField("size", limit).
+		Info("Setting default MaxMessageSize")
 	defaultMaxMessageSize = limit
 }

@@ -2,7 +2,8 @@ package eventsocket
 
 import (
 	"fmt"
-	"os"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 // hub maintains the set of active connections, and broadcasts messages
@@ -44,6 +45,8 @@ var h = hub{
 }
 
 func (h *hub) run() {
+	log.Info("Starting hub execution")
+
 	go h.recvRegistrations()
 	go h.recvUnregistrations()
 
@@ -56,18 +59,21 @@ func (h *hub) run() {
 }
 
 func (h *hub) recvRegistrations() {
+	log.Info("Ready to receive client registrations")
 	for {
 		h.registerClient(<-h.register)
 	}
 }
 
 func (h *hub) recvUnregistrations() {
+	log.Info("Ready to receive client unregistrations")
 	for {
 		h.unregisterConnection(<-h.unregister)
 	}
 }
 
 func (h *hub) registerClient(client *Client) {
+	log.WithField("clientID", client.Id).Info("Registring client")
 	h.connections[client.ws] = client.Id
 	h.clientSubscriptions[client.Id] = make(map[string]bool)
 
@@ -85,11 +91,13 @@ func (h *hub) unregisterConnection(ws *wsConnection) {
 
 	// if we dont know about this conneciton, then get out
 	if _, ok := h.connections[ws]; !ok {
+		log.Info("Aborting unregistration of unknown connection")
 		return
 	}
 
 	id := h.connections[ws]
 	delete(h.connections, ws)
+	log.WithField("clientID", id).Info("Unregistring connection")
 
 	// if we dont have any clientSubscriptions, then leave
 	if _, ok := h.clientSubscriptions[id]; !ok {
@@ -102,10 +110,13 @@ func (h *hub) unregisterConnection(ws *wsConnection) {
 	}
 
 	delete(h.clientSubscriptions, id)
+	log.WithField("clientID", id).Info("Successfully unregistered connection")
 }
 
 // ingest a message and route it to the propper destination
 func (h *hub) ingest(cm *ClientMessage) {
+	log.WithField("clientID", cm.ClientId).Info("Injesting message")
+
 	switch cm.Message.MessageType {
 	case MESSAGE_TYPE_BROADCAST:
 		h.handleBroadcast(cm)
@@ -120,14 +131,19 @@ func (h *hub) ingest(cm *ClientMessage) {
 	case MESSAGE_TYPE_REPLY:
 		h.handleReply(cm)
 	default:
-		fmt.Printf("ERROR: unhandled MessageType:%v [ClientId:%s]\n", cm.Message.MessageType, cm.ClientId)
-		os.Exit(1)
+		log.WithField("clientID", cm.ClientId).
+			WithField("type", cm.Message.MessageType).
+			Error("Unknown message type")
+		// FIXME: dont just silently drop message ..
 	}
 }
 
 // broadcast a message to all active clients
 func (h *hub) handleBroadcast(cm *ClientMessage) {
-	for ws := range h.connections {
+	log.WithField("clientID", cm.ClientId).Info("Handling broadcast message")
+
+	for ws, clientID := range h.connections {
+		log.WithField("clientID", clientID).Debug("Transmitting broadcast message")
 		h.send(ws, &cm.Message)
 	}
 
@@ -136,13 +152,19 @@ func (h *hub) handleBroadcast(cm *ClientMessage) {
 
 // handle a standard message
 func (h *hub) handleStandard(cm *ClientMessage) {
+	log.WithField("clientID", cm.ClientId).Info("Handling standard message")
+
 	// ensure there is atleast one suscriber of this event
 	subscribers, ok := h.subscriptions[cm.Message.Event]
 	if !ok {
+		log.WithField("clientID", cm.ClientId).
+			WithField("event", cm.Message.Event).
+			Warn("No subscribers for event")
 		return
 	}
 
 	for s := range subscribers {
+		log.WithField("clientID", s).Debug("Transmitting standard message")
 		h.send(clients[s].ws, &cm.Message)
 	}
 
@@ -151,9 +173,12 @@ func (h *hub) handleStandard(cm *ClientMessage) {
 
 // suscribe a client to events
 func (h *hub) handleSuscribe(cm *ClientMessage) {
+	log.WithField("clientID", cm.ClientId).Info("Handling subscription request")
+
 	// sanity check
 	events, ok := cm.Message.Payload["Events"]
 	if !ok {
+		log.WithField("clientID", cm.ClientId).Error("No events provided")
 		return
 	}
 
@@ -167,9 +192,12 @@ func (h *hub) handleSuscribe(cm *ClientMessage) {
 
 // unsuscribe a client from events
 func (h *hub) handleUnsuscribe(cm *ClientMessage) {
+	log.WithField("clientID", cm.ClientId).Info("Handling unsuscribe request")
+
 	// sanity check
 	events, ok := cm.Message.Payload["Events"]
 	if !ok {
+		log.WithField("clientID", cm.ClientId).Error("No events provided")
 		return
 	}
 
@@ -190,9 +218,18 @@ func (h *hub) handleUnsuscribe(cm *ClientMessage) {
 // ClientId as the ReplyTo, and then forwarding the message along
 // to the receiving client
 func (h *hub) handleRequest(cm *ClientMessage) {
+	log.WithField("fromClientID", cm.ClientId).
+		WithField("toClientID", cm.Message.RequestClientId).
+		Info("Handling request")
+
+	// store the clientID sending the message as the client to reply to
 	cm.Message.ReplyClientId = cm.ClientId
 
 	if clients[cm.Message.RequestClientId] == nil {
+		log.WithField("fromClientID", cm.ClientId).
+			WithField("toClientID", cm.Message.RequestClientId).
+			Error("Client does not exist")
+
 		h.requestError(cm,
 			"RequestClientID does not exist",
 			ErrorRequestClientNoExist,
@@ -202,6 +239,10 @@ func (h *hub) handleRequest(cm *ClientMessage) {
 
 	err := h.send(clients[cm.Message.RequestClientId].ws, &cm.Message)
 	if err != nil {
+		log.WithField("fromClientID", cm.ClientId).
+			WithField("toClientID", cm.Message.RequestClientId).
+			Error("Client is not connected")
+
 		h.requestError(cm,
 			"RequestClientID is not connected",
 			ErrorRequestClientNotConnected,
@@ -211,12 +252,19 @@ func (h *hub) handleRequest(cm *ClientMessage) {
 
 // handle a reply. forward the message along to the requestee
 func (h *hub) handleReply(cm *ClientMessage) {
+	log.WithField("fromClientID", cm.ClientId).
+		WithField("toClientID", cm.Message.ReplyClientId).
+		Info("Handling reply")
+
 	// FIXME need to have some form of error handling here..
 	h.send(clients[cm.Message.ReplyClientId].ws, &cm.Message)
 }
 
 // store the subscription for the given clientId and event
 func (h *hub) storeSubscription(id, e string) {
+	log.WithField("clientID", id).WithField("event", e).
+		Info("Storing subscription")
+
 	// make sure we have a subscription key
 	if _, ok := h.subscriptions[e]; !ok {
 		h.subscriptions[e] = make(hubSubscription)
@@ -233,6 +281,9 @@ func (h *hub) storeSubscription(id, e string) {
 
 // purge the subscription
 func (h *hub) purgeSubscription(id, e string) {
+	log.WithField("clientID", id).WithField("event", e).
+		Info("Purgin subscription")
+
 	// remove the clientSubscriptions map, if it exists
 	if _, ok := h.clientSubscriptions[id][e]; ok {
 		delete(h.clientSubscriptions[id], e)
@@ -248,6 +299,9 @@ func (h *hub) purgeSubscription(id, e string) {
 
 	// if no one else if suscribing, then remove the suscription key
 	if len(h.subscriptions[e]) == 0 {
+		log.WithField("event", e).
+			Debug("No suscribers remain")
+
 		delete(h.subscriptions, e)
 	}
 

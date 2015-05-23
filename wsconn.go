@@ -3,6 +3,7 @@ package eventsocket
 import (
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/dronemill/eventsocket/Godeps/_workspace/src/github.com/gorilla/websocket"
 )
 
@@ -38,6 +39,8 @@ type wsConnection struct {
 }
 
 func newWsConnection(ws *websocket.Conn) (*wsConnection, error) {
+	log.Info("Creating new wsConn")
+
 	wsc := &wsConnection{
 		send:           make(chan Message, 256),
 		recv:           make(chan Message, 256),
