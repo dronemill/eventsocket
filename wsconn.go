@@ -20,6 +20,7 @@ const (
 
 // maximum message size allowed from peer
 var defaultMaxMessageSize = int64(512)
+var defaultReadDeadline = 30 * time.Second
 
 type wsConnection struct {
 	// The websocket connection.
@@ -36,6 +37,9 @@ type wsConnection struct {
 
 	// the maximum message size allowed
 	maxMessageSize int64
+
+	// the socket Read Deadline
+	readDeadline time.Duration
 }
 
 func newWsConnection(ws *websocket.Conn) (*wsConnection, error) {
@@ -47,6 +51,7 @@ func newWsConnection(ws *websocket.Conn) (*wsConnection, error) {
 		ws:             ws,
 		closed:         false,
 		maxMessageSize: defaultMaxMessageSize,
+		readDeadline:   defaultReadDeadline,
 	}
 
 	return wsc, nil
@@ -55,6 +60,11 @@ func newWsConnection(ws *websocket.Conn) (*wsConnection, error) {
 // override the default readlimit of 512
 func (wsc *wsConnection) SetMaxMessageSize(limit int64) {
 	wsc.maxMessageSize = limit
+}
+
+// override the default readDeadline
+func (wsc *wsConnection) SetReadDeadline(t time.Duration) {
+	wsc.readDeadline = t
 }
 
 func (wsc *wsConnection) pump() {
@@ -69,7 +79,7 @@ func (wsc *wsConnection) readPump() {
 	}()
 
 	wsc.ws.SetReadLimit(wsc.maxMessageSize)
-	wsc.ws.SetReadDeadline(time.Now().Add(pongWait))
+	wsc.ws.SetReadDeadline(time.Now().Add(wsc.readDeadline))
 	wsc.ws.SetPongHandler(func(string) error { wsc.ws.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
 		m := &Message{}

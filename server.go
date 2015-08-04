@@ -2,6 +2,7 @@ package eventsocket
 
 import (
 	"errors"
+	"time"
 
 	log "github.com/dronemill/eventsocket/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 )
@@ -60,4 +61,12 @@ func (server *Server) SetDefaultMaxMessageSize(limit int64) {
 		WithField("size", limit).
 		Info("Setting default MaxMessageSize")
 	defaultMaxMessageSize = limit
+}
+
+// set the default read deadline from the peer
+func (server *Server) SetDefaultReadDeadline(t time.Duration) {
+	log.WithField("listenAddr", server.Config.listenAddr).
+		WithField("duration", t.Seconds()).
+		Info("Setting Default ReadDeadline")
+	defaultReadDeadline = t
 }
