@@ -23,6 +23,9 @@ var defaultMaxMessageSize = int64(512)
 var defaultReadDeadline = 30 * time.Second
 
 type wsConnection struct {
+	// The ID of the websocket
+	id string
+
 	// The websocket connection.
 	ws *websocket.Conn
 
@@ -43,9 +46,11 @@ type wsConnection struct {
 }
 
 func newWsConnection(ws *websocket.Conn) (*wsConnection, error) {
-	log.Info("Creating new wsConn")
+	id := <-uuidBuilder
+	log.WithField("websocketID", id.String()).Info("Creating new wsConn")
 
 	wsc := &wsConnection{
+		id:             id.String(),
 		send:           make(chan Message, 256),
 		recv:           make(chan Message, 256),
 		ws:             ws,
@@ -79,7 +84,7 @@ func (wsc *wsConnection) readPump() {
 	}()
 
 	wsc.ws.SetReadLimit(wsc.maxMessageSize)
-	wsc.ws.SetReadDeadline(time.Now().Add(wsc.readDeadline))
+	wsc.ws.SetReadDeadline(time.Now().Add(pongWait))
 	wsc.ws.SetPongHandler(func(string) error { wsc.ws.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
 		m := &Message{}
@@ -121,6 +126,7 @@ func (wsc *wsConnection) writePump() {
 				return
 			}
 		case <-ticker.C:
+			log.WithField("websocketID", wsc.id).Info("Pinging wsConn")
 			if err := wsc.write(websocket.PingMessage, []byte{}); err != nil {
 				return
 			}
