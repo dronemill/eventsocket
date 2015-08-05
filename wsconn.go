@@ -93,6 +93,7 @@ func (wsc *wsConnection) readPump() {
 	for {
 		m := &Message{}
 		if wsc.ws.ReadJSON(m) != nil {
+			log.WithField("websocketID", wsc.id).Error("Failed reading JSON")
 			break
 		}
 
@@ -123,10 +124,12 @@ func (wsc *wsConnection) writePump() {
 		select {
 		case message, ok := <-wsc.send:
 			if !ok {
+				log.WithField("websocketID", wsc.id).Warn("Received error on send channel")
 				wsc.write(websocket.CloseMessage, []byte{})
 				return
 			}
 			if err := wsc.writeJSON(message); err != nil {
+				log.WithField("websocketID", wsc.id).Error("Failed sending message")
 				return
 			}
 		case <-ticker.C:
