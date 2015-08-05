@@ -85,7 +85,11 @@ func (wsc *wsConnection) readPump() {
 
 	wsc.ws.SetReadLimit(wsc.maxMessageSize)
 	wsc.ws.SetReadDeadline(time.Now().Add(pongWait))
-	wsc.ws.SetPongHandler(func(string) error { wsc.ws.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	wsc.ws.SetPongHandler(func(string) error {
+		log.WithField("websocketID", wsc.id).Info("Received pong from wsConn")
+		wsc.ws.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
 	for {
 		m := &Message{}
 		if wsc.ws.ReadJSON(m) != nil {
